@@ -3,141 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Click the Circle Game</title>
+  <title>Dodge the Blocks</title>
 
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #111827;
+      background: #111;
       color: white;
+      font-family: Arial, sans-serif;
       text-align: center;
     }
 
     h1 {
-      margin: 20px 0 10px;
+      margin: 15px;
     }
 
-    #info {
-      font-size: 20px;
-      margin-bottom: 15px;
+    #score {
+      font-size: 22px;
+      margin-bottom: 10px;
     }
 
     #game {
-      width: 90vw;
-      max-width: 800px;
-      height: 500px;
+      width: 400px;
+      height: 600px;
+      background: #222;
+      border: 3px solid white;
       margin: auto;
-      background: #1f2937;
-      border: 3px solid #374151;
-      border-radius: 15px;
       position: relative;
       overflow: hidden;
     }
 
-    #circle {
+    #player {
       width: 50px;
       height: 50px;
-      background: #22c55e;
-      border-radius: 50%;
+      background: #00aaff;
       position: absolute;
-      cursor: pointer;
-      display: none;
+      bottom: 20px;
+      left: 175px;
+      border-radius: 8px;
+    }
+
+    .enemy {
+      width: 50px;
+      height: 50px;
+      background: red;
+      position: absolute;
+      top: -50px;
+      border-radius: 8px;
     }
 
     button {
-      padding: 12px 25px;
+      margin: 15px;
+      padding: 10px 25px;
       font-size: 18px;
+      cursor: pointer;
       border: none;
       border-radius: 8px;
-      background: #3b82f6;
+      background: #00aaff;
       color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #2563eb;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>🎯 Click the Circle!</h1>
-
-  <div id="info">
-    Score: <span id="score">0</span> |
-    Time: <span id="time">30</span>
-  </div>
+  <h1>🚗 Dodge the Blocks</h1>
+  <div id="score">Score: 0</div>
 
   <button onclick="startGame()">Start Game</button>
 
   <div id="game">
-    <div id="circle" onclick="hitCircle()"></div>
+    <div id="player"></div>
   </div>
 
   <script>
-    let score = 0;
-    let time = 30;
-    let timer;
-    let playing = false;
-
-    const circle = document.getElementById("circle");
+    const player = document.getElementById("player");
     const game = document.getElementById("game");
     const scoreText = document.getElementById("score");
-    const timeText = document.getElementById("time");
+
+    let playerX = 175;
+    let score = 0;
+    let gameRunning = false;
+    let enemies = [];
+
+    document.addEventListener("keydown", function(event) {
+      if (!gameRunning) return;
+
+      if (event.key === "ArrowLeft" && playerX > 0) {
+        playerX -= 25;
+      }
+
+      if (event.key === "ArrowRight" && playerX < 350) {
+        playerX += 25;
+      }
+
+      player.style.left = playerX + "px";
+    });
 
     function startGame() {
       score = 0;
-      time = 30;
-      playing = true;
+      playerX = 175;
+      gameRunning = true;
 
-      scoreText.textContent = score;
-      timeText.textContent = time;
+      scoreText.textContent = "Score: 0";
+      player.style.left = playerX + "px";
 
-      circle.style.display = "block";
-      moveCircle();
+      enemies.forEach(enemy => enemy.remove());
+      enemies = [];
 
-      clearInterval(timer);
+      gameLoop();
+    }
 
-      timer = setInterval(() => {
-        time--;
-        timeText.textContent = time;
+    function createEnemy() {
+      if (!gameRunning) return;
 
-        if (time <= 0) {
-          endGame();
+      const enemy = document.createElement("div");
+      enemy.classList.add("enemy");
+
+      enemy.style.left = Math.random() * 350 + "px";
+      enemy.style.top = "-50px";
+
+      game.appendChild(enemy);
+      enemies.push(enemy);
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      enemies.forEach((enemy, index) => {
+        let y = parseInt(enemy.style.top);
+        y += 5;
+
+        enemy.style.top = y + "px";
+
+        const enemyX = parseInt(enemy.style.left);
+
+        // Collision detection
+        if (
+          y + 50 > 530 &&
+          y < 580 &&
+          enemyX < playerX + 50 &&
+          enemyX + 50 > playerX
+        ) {
+          gameOver();
         }
-      }, 1000);
+
+        // Enemy passed player
+        if (y > 600) {
+          enemy.remove();
+          enemies.splice(index, 1);
+
+          score++;
+          scoreText.textContent = "Score: " + score;
+        }
+      });
+
+      requestAnimationFrame(gameLoop);
     }
 
-    function hitCircle() {
-      if (!playing) return;
+    function gameOver() {
+      gameRunning = false;
 
-      score++;
-      scoreText.textContent = score;
-
-      moveCircle();
+      alert("💥 Game Over!\nYour score: " + score);
     }
 
-    function moveCircle() {
-      const maxX = game.clientWidth - circle.offsetWidth;
-      const maxY = game.clientHeight - circle.offsetHeight;
-
-      const x = Math.random() * maxX;
-      const y = Math.random() * maxY;
-
-      circle.style.left = x + "px";
-      circle.style.top = y + "px";
-    }
-
-    function endGame() {
-      playing = false;
-      clearInterval(timer);
-
-      circle.style.display = "none";
-
-      alert("Game Over! Your score: " + score);
-    }
+    // Create enemies regularly
+    setInterval(() => {
+      if (gameRunning) {
+        createEnemy();
+      }
+    }, 800);
   </script>
 
 </body>
